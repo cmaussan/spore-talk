@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+
+<meta charset="utf-8">
+<title>SPORE</title>
+
+<!-- Your Slides -->
+<!-- One section is one slide -->
+
+<section>
+    <!-- This is the first slide -->
+    <h1>SPORE</h1>
+    <p class="baseline">La solution polyglotte pour accéder aux API REST</p>
+    <footer style="left: 20px; ">Camille Maussang</footer>
+    <footer style="bottom: 5px; "><img style="height: 30px; " src="linkfluence_white.png"></footer>
+</section>
+
+<section>
+    <h3>SPecifications for a POrtable Rest Environment</h3>
+    <blockquote>SPORE is a specification for describing REST API that can be parsed and used automatically by clients implementations to communicate with the described API.</blockquote>
+    <ul class="incremental" style="margin-top: 40px; ">
+      <li><span class="normal">Créé par Franck Cuny et Nils Grünwald au sein de Linkfluence.</span>
+      <li><span class="normal">Première release à l'OSDC.fr 2010 :)</span>
+    </ul>
+</section>
+
+<section>
+    <h3>Pourquoi ?</h3>
+    <p>Chez Linkfluence, on développe des moteurs de captation/traitement de données issues du web social.</p>
+    <ul class="incremental" style="margin-top: 40px; ">
+        <li><span class="normal">Système distribué d'agents dans plusieurs langages</span>
+        <li><span class="normal">Communications avec bases, outils externes, etc. en REST</span>
+        <li><span class="normal">Write once, deploy everywhere</span>
+    </ul>
+</section>
+
+<section>
+    <h3 style="margin-top: 80px; ">Une spec ?</h3>
+    <p class="subtitle"><a href="https://dev.twitter.com/docs/api/1/get/search">https://dev.twitter.com/docs/api/1/get/search</a></p>
+    <div class="code">
+    <pre class='prettyprint'>
+{
+    "base_url" : "http://search.twitter.com/",
+    "methods" : {
+        "search" : {
+            "path" : "/search.:format",
+            "method" : "GET",
+            "required_params" : [
+                "format",
+                "q"
+            ],
+            "optional_params" : [
+                "geocode",
+                "lang",
+                "locale",
+                "page",
+                "result_type"
+             ],
+             "expected_status":[200]
+        }
+    }
+}</pre>
+    </div>
+</section>
+
+<section>
+    <h3>Middlewares</h3>
+    <ul>
+        <li><span class="normal">Formats</span>
+        <li><span class="normal">Authenfication</span>
+        <li><span class="normal">Cache</span>
+        <li><span class="normal">Gestion des headers</span>
+    </ul>
+</section>
+
+<section>
+    <h3 style="margin-top: 40px; ">Perl</h3>
+    <div class="code">
+    <pre class='prettyprint'>
+use Net::HTTP::Spore;
+use Try::Tiny;
+
+my $client = Net::HTTP::Spore->new(
+    '/path/to/spec.json',
+    base_url => 'http://base_url/', # Optional
+);
+$client->enable( 'Format::JSON' );
+
+my $res;
+try {
+    $res = $client->search( format => 'json', q => 'fpw' );
+}
+catch {
+    warn $_;
+};
+
+say $_->{ text } for( @{ $res->body->{ results } } );</pre>
+    </div>
+    <ul style="margin-top: 10px; ">
+        <li><span class="normal">Client complet (en prod)</span>
+        <li><span class="normal">Développé chez Linkfluence par Franck Cuny</span>
+        <li><span class="normal">Net-HTTP-Spore est dispo sur <a href="https://metacpan.org/module/Net::HTTP::Spore">CPAN</a> et sur <a href="https://github.com/franckcuny/net-http-spore">GitHub</a></span>
+    </ul>
+</section>
+
+<section>
+    <h3 style="margin-top: 40px; ">Clojure</h3>
+    <div class="code">
+    <pre class='prettyprint'>
+(use '(clj-spore) '(clj-spore.middleware))
+
+(def client (load-spec-from-file "/path/to/spec.json"
+                             :middlewares [wrap-json-format]
+                             :overload {:base_url "http://base_url/"}))
+
+(try
+    (let [res ((client :search) :format "json" :q "fpw")]
+        (doseq [item (:decoded-body res)] (println (item :text))))
+    (catch Exception e (println (.getMessage e))))</pre>
+    </div>
+    <ul style="margin-top: 10px; ">
+        <li><span class="normal">Client complet (en prod)</span>
+        <li><span class="normal">Développé chez Linkfluence par Nils Grünwald</span>
+        <li><span class="normal">clj-spore est dispo sur <a href="https://github.com/ngrunwald/clj-spore">GitHub</a></span>
+    </ul>
+</section>
+
+<section>
+    <h3 style="margin-top: 40px; ">Lua</h3>
+    <div class="code">
+    <pre class='prettyprint'>
+local Spore = require 'Spore'
+
+local client = Spore.new_from_spec '/path/to/spec.json'
+client:enable 'Format.JSON'
+
+local res = client:search{ format = 'json', q = 'fpw' }
+
+for t in res.body.results do
+    print( t.text )
+end</pre>
+    </div>
+    <ul style="margin-top: 10px; ">
+        <li><span class="normal">Client complet (en prod ?)</span>
+        <li><span class="normal">Développé par François Perrad</span>
+        <li><span class="normal">lua-Spore est dispo sur <a href="http://luaforge.net/projects/lua-spore/">LuaForge</a> et sur <a href="http://github.com/fperrad/lua-Spore">GitHub</a></span>
+    </ul>
+</section>
+
+<section>
+    <h3 style="margin-top: 40px; ">Ruby</h3>
+    <div class="code">
+    <pre class='prettyprint'>
+require 'spore'
+require 'spore/middleware/format'
+
+client = Spore.new(
+    '/path/to/spec.json',
+    { :base_url => 'http://base_url/' } 
+)
+client.enable(Spore::Middleware::Format)
+
+res = begin
+    client.search( :format => 'json', :q => 'fpw' )
+rescue
+    raise $!
+end
+
+res.body.results.each do |t|
+    puts t.text
+end</pre>
+    </div>
+    <ul style="margin-top: 10px; ">
+        <li><span class="normal">Client complet (en prod)</span>
+        <li><span class="normal">Développé chez Weborama par Sukria</span>
+        <li><span class="normal">Ruby-Spore est dispo sur <a href="https://github.com/sukria/Ruby-Spore">GitHub</a></span>
+    </ul>
+</section>
+
+<section>
+    <h3 style="margin-top: 40px; ">nodejs</h3>
+    <div class="code">
+    <pre class='prettyprint'>
+var spore = require( 'spore' );
+var client = spore.createClient( __dirname + '/path/to/spec.json' );
+client.enable( spore.middlewares.json() ); 
+
+client.search( { format: 'json', q: 'fpw' }, function( err, res ) {
+    if ( err ) 
+        throw err;
+    for( i in res.body.results ){
+        console.log( res.body.results[i].text );
+    };    
+} );</pre>
+    </div>
+    <ul style="margin-top: 10px; ">
+        <li><span class="normal">Client complet (en prod ?)</span>
+        <li><span class="normal">Développé chez AF83 par François de Metz</span>
+        <li><span class="normal">node-spore est dispo sur <a href="http://search.npmjs.org/#/spore">npm</a> et sur <a href="https://github.com/francois2metz/node-spore">GitHub</a></span>
+    </ul>
+</section>
+
+<section>
+    <h3 style="margin-top: 40px; ">jQuery</h3>
+    <div class="code">
+    <pre class='prettyprint'>
+&lt;script type="text/javascript" src="jquery-spore/spore.js"&gt;&lt;/script&gt;
+&lt;script type="text/javascript"&gt;
+    var client  = spore.create(twitter_spec,function(a){ client=a });
+
+    client.search(
+        { "format": "json", "q": "fpw" },
+        function( res, req ) {
+            for( var i in d.results ) {
+                var t = d.results[i];
+                $( '&lt;li&gt;' )
+                    .text( t.text )
+                    .appendTo( '#result > ul' );
+            }
+        }, 
+        function( req ) {
+            alert( req );
+        }
+    );
+&lt;/script&gt;</pre>
+    </div>
+    <ul style="margin-top: 10px; ">
+        <li><span class="normal">Fonctionne uniquement en JSONP</span>
+        <li><span class="normal">Pas de support des middlewares pour le moment</span>
+        <li><span class="normal">Développé chez Linkfluence par Niko</span>
+        <li><span class="normal">jquery-spore est dispo sur <a href="https://github.com/nikopol/jquery-spore">GitHub</a></span>
+    </ul>
+</section>
+
+<section>
+    <h3 style="margin-top: 40px; ">Java</h3>
+    <div class="code">
+    <pre class='prettyprint'>
+import net.linkfluence.spore;
+import com.google.common.collect.ImmutableMap;
+import java.util.Map;
+
+public class MySporeTest {
+    public static void main(String[] args) {
+        String spec = "/path/to/spec.json";
+        Spore<JsonNode> spore = new Spore.Builder<JsonNode>()
+                               .addMiddleware(Spore.JSON).addSpecContent(spec).build();
+        Map<String, String> publicParams = new ImmutableMap.Builder<String, String>()
+                                           .put("format", "json").put("q", "fpw")
+                                           .build();
+        SporeResult<JsonNode> result = spore.call("search", publicParams);
+        Iterator<JsonNode> results = result.body.get("results").getElements();
+        while (results.hasNext()) {
+            System.out.println( results.next().get("text").getTextValue() );
+        }
+    }
+}</pre>
+    </div>
+    <ul style="margin-top: 10px; ">
+        <li><span class="normal">Client fonctionnel</span>
+        <li><span class="normal">Quelques middlewares seulement</span>
+        <li><span class="normal">Développé chez Linkfluence par Nicolas Yzet</span>
+        <li><span class="normal">jspore est dispo sur <a href="https://github.com/nicoo/jspore">GitHub</a></span>
+    </ul>
+</section>
+
+<section>
+    <h3>Autre langages</h3>
+    <p class="subtitle">Python</p>
+    <ul style="margin-top: 10px; ">
+        <li><span class="normal">Client en cours par Franck Cuny</span>
+    </ul>
+
+    <p class="subtitle">Autres</p>
+    <ul style="margin-top: 10px; ">
+        <li><span class="normal">PHP (?)</span>
+        <li><span class="normal">C++, Haskell, Go : à faire ;)</span>
+    </ul>
+</section>
+
+<section>
+    <h3>Specs existantes</h3>
+    <p class="subtitle">Services</p>
+
+    <p>Amazon S3 / Bitly / Data Publica / Facebook (Graph et REST) / GeoNames / GitHub / 
+    GoogleOAuth / Google (Maps, PageSpeed, Shortener, Translate) / Gnip / 
+    HackerNews / IndexTank / Intervals / Klout / LinkedIn / Ohloh / OpenCalais / 
+    SoundCloud (pr) / Superfeedr / Topsy / Twitter / TwitterSearch</p>
+
+    <p class="subtitle">Apps</p>
+    <p>CouchDB / Presque (système de message inspiré de resque) / Redmine</p>
+</section>
+
+<section>
+    <h3>Google APIs Discovery</h3>
+    <ul class="incremental" style="margin-top: 40px; ">
+        <li><span class="normal">Specs plus simples (<a href="https://www.googleapis.com/discovery/v1/apis/urlshortener/v1/rest">Google APIs Discovery</a> vs. <a href="https://github.com/SPORE/api-description/blob/master/services/googleshortener.json">SPORE</a>)</span>
+        <li><span class="normal">Souplesse : pas de compilation</span>
+        <li><span class="normal">Google APIs Discovery n'existe aujourd'hui que pour les APIs Google</span>
+        <li><span class="normal">SPORE est compatible (on peut générer des specs SPORE à partir de specs Google APIs Discovery)</span>
+    </ul>
+</section>
+
+<section>
+    <h3>Infos</h3>
+    <ul>
+        <li><span class="normal">Les specs et les descriptions d'API sont sur GitHub (<a href="https://github.com/SPORE">https://github.com/SPORE</a>)</span>
+        <li><span class="normal">Tous les projets aussi</span>
+        <li><span class="normal">Donc <strong>"fork"</strong> puis <strong>"pull request"</strong> :)</span>
+    </ul>
+    <ul>
+        <li><span class="normal">Un GoogleGroup : <a href="https://groups.google.com/group/spore-rest">https://groups.google.com/group/spore-rest</a></span>
+</section>
+
+<section>
+    <h3>Remerciements</h3>
+    <ul>
+        <li><span class="normal">François Perrad, Sukria et Weborama, François de Metz et AF83<span>
+        <li><span class="normal">Tous ceux qui écrivent des specs :)</span>
+        <li><span class="normal">Tous ceux qui utilisent SPORE !</span>
+    </ul>
+</section>
+
+<link href="google-code-prettify/prettify.css" rel="stylesheet" type="text/css">
+<link href="google-code-prettify/style/sunburst.css" rel="stylesheet" type="text/css">
+<script src="google-code-prettify/prettify.js"></script>
+<script>document.addEventListener('DOMContentLoaded', function () { prettyPrint() }, false);</script>
+
+<style>
+@font-face {
+  font-family: 'Droid Sans';
+  font-style: normal;
+  font-weight: normal;
+  src: url('DroidSans.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Droid Sans';
+  font-style: normal;
+  font-weight: bold;
+  src: url('DroidSansBold.ttf') format('truetype');
+}  
+  @font-face { font-family: 'Inconsolata'; src: url('Inconsolata.otf'); }
+
+  html { background-color: white; }
+  body { background-color: black; }
+
+  /* A section is a slide. It's size is 800x600, and this will never change */
+
+  section {
+      /* The font from Google */
+      font-family: 'Droid Sans', arial, serif;
+      font-size: 24px;
+      color: whitesmoke;
+  }
+
+  code {
+     font-family: 'Inconsolata';
+     font-size: 30px;
+     color: lightgrey;
+  }
+
+  h1, h2 {
+    margin-top: 200px;
+    text-align: center;
+    font-size: 80px;
+  }
+
+  h3 {
+    margin: 100px 0 20px 80px;
+  }
+
+  p {
+    margin: 0 100px;
+  }
+
+  p.baseline {
+    text-align: center;
+    color: grey;
+    font-size: 30px;
+  }
+
+  p.subtitle {
+    font-size: 24px;
+    font-weight: bold;
+    margin: 0 80px;
+  }
+
+  blockquote {
+    margin: 0 100px;
+    font-style: italic;
+  }
+
+  blockquote:before {
+    content: open-quote;
+  }
+  blockquote:after {
+    content: close-quote;
+  }
+
+  ul {
+      margin: 80px 100px;
+  }
+
+  div.code {
+    margin: 0 70px;
+  }
+
+  pre {
+    font-family: 'Inconsolata';
+    font-size: 14px;
+    /*margin: 10px 50px;*/
+  }
+
+  q {
+    display: inline-block;
+    width: 700px;
+    height: 600px;
+    background-color: black;
+    color: white;
+    font-size: 60px;
+    padding: 50px;
+  }
+
+/*
+  img, video {
+    width: 800px;
+    height: 600px;
+    position: absolute;
+    top: 0;
+    background-color: black;
+    z-index: -1;
+  }
+*/
+
+  footer {
+    position: absolute;
+    bottom: 10px;
+    right: 20px;
+    font-size: 25px;
+    font-weight: bold;
+    color: whitesmoke;    
+  }
+
+  .normal {
+      color: whitesmoke;
+  }
+
+  a {
+    color: #89bdff;
+    text-decoration: none;
+  }
+
+  /* Transition effect */
+  /* Feel free to change the transition effect for original
+     animations. See here:
+     https://developer.mozilla.org/en/CSS/CSS_transitions
+     How to use CSS3 Transitions: */
+  section {
+      -moz-transition: left 400ms linear 0s;
+      -webkit-transition: left 400ms linear 0s;
+      -ms-transition: left 400ms linear 0s;
+      transition: left 400ms linear 0s;
+  }
+
+  /* Before */
+  section { left: -150%; }
+  /* Now */
+  section[aria-selected] { left: 0; }
+  /* After */
+  section[aria-selected] ~ section { left: +150%; }
+
+  /* Incremental elements */
+
+  /* By default, visible */
+  .incremental > * { opacity: 1; }
+
+  /* The current item */
+  .incremental > *[aria-selected] { color: #ffcc00; opacity: 1; }
+
+  /* The items to-be-selected */
+  .incremental > *[aria-selected] ~ * { opacity: 0.2; }
+
+</style>
+
+<!-- {{{{ dzslides core
+#
+#
+#     __  __  __       .  __   ___  __
+#    |  \  / /__` |    | |  \ |__  /__`
+#    |__/ /_ .__/ |___ | |__/ |___ .__/ core :€
+#
+#
+# The following block of code is not supposed to be edited.
+# But if you want to change the behavior of these slides,
+# feel free to hack it!
+#
+-->
+
+<!-- Default Style -->
+<style>
+  * { margin: 0; padding: 0; }
+  details { display: none; }
+  body {
+    width: 800px; height: 600px;
+    margin-left: -400px; margin-top: -300px;
+    position: absolute; top: 50%; left: 50%;
+    overflow: hidden;
+  }
+  section {
+    position: absolute;
+    pointer-events: none;
+    width: 100%; height: 100%;
+  }
+  section[aria-selected] { pointer-events: auto; }
+  html { overflow: hidden; }
+  body { display: none; }
+  body.loaded { display: block; }
+  .incremental {visibility: hidden; }
+  .incremental[active] {visibility: visible; }
+</style>
+
+<script>
+  var Dz = {
+    remoteWindows: [],
+    idx: -1,
+    step: 0,
+    slides: null,
+    params: {
+      autoplay: "1"
+    }
+  };
+
+  Dz.init = function() {
+    document.body.className = "loaded";
+    this.slides = $$("body > section");
+    this.setupParams();
+    this.onhashchange();
+    this.setupTouchEvents();
+    this.onresize();
+  }
+  
+  Dz.setupParams = function() {
+    var p = window.location.search.substr(1).split('&');
+    p.forEach(function(e, i, a) {
+      var keyVal = e.split('=');
+      Dz.params[keyVal[0]] = decodeURIComponent(keyVal[1]);
+    });
+  }
+
+  Dz.onkeydown = function(aEvent) {
+    // Don't intercept keyboard shortcuts
+    if (aEvent.altKey
+      || aEvent.ctrlKey
+      || aEvent.metaKey
+      || aEvent.shiftKey) {
+      return;
+    }
+    if ( aEvent.keyCode == 37 // left arrow
+      || aEvent.keyCode == 38 // up arrow
+      || aEvent.keyCode == 33 // page up
+    ) {
+      aEvent.preventDefault();
+      this.back();
+    }
+    if ( aEvent.keyCode == 39 // right arrow
+      || aEvent.keyCode == 40 // down arrow
+      || aEvent.keyCode == 34 // page down
+    ) {
+      aEvent.preventDefault();
+      this.forward();
+    }
+    if (aEvent.keyCode == 35) { // end
+      aEvent.preventDefault();
+      this.goEnd();
+    }
+    if (aEvent.keyCode == 36) { // home
+      aEvent.preventDefault();
+      this.goStart();
+    }
+    if (aEvent.keyCode == 32) { // space
+      aEvent.preventDefault();
+      this.toggleContent();
+    }
+  }
+
+  /* Touch Events */
+
+  Dz.setupTouchEvents = function() {
+    var orgX, newX;
+    var tracking = false;
+
+    var db = document.body;
+    db.addEventListener("touchstart", start.bind(this), false);
+    db.addEventListener("touchmove", move.bind(this), false);
+
+    function start(aEvent) {
+      aEvent.preventDefault();
+      tracking = true;
+      orgX = aEvent.changedTouches[0].pageX;
+    }
+
+    function move(aEvent) {
+      if (!tracking) return;
+      newX = aEvent.changedTouches[0].pageX;
+      if (orgX - newX > 100) {
+        tracking = false;
+        this.forward();
+      } else {
+        if (orgX - newX < -100) {
+          tracking = false;
+          this.back();
+        }
+      }
+    }
+  }
+
+  /* Adapt the size of the slides to the window */
+
+  Dz.onresize = function() {
+    var db = document.body;
+    var sx = db.clientWidth / window.innerWidth;
+    var sy = db.clientHeight / window.innerHeight;
+    var transform = "scale(" + (1/Math.max(sx, sy)) + ")";
+
+    db.style.MozTransform = transform;
+    db.style.WebkitTransform = transform;
+    db.style.OTransform = transform;
+    db.style.msTransform = transform;
+    db.style.transform = transform;
+  }
+
+
+  Dz.getDetails = function(aIdx) {
+    var s = $("section:nth-of-type(" + aIdx + ")");
+    var d = s.$("details");
+    return d ? d.innerHTML : "";
+  }
+
+  Dz.onmessage = function(aEvent) {
+    var argv = aEvent.data.split(" "), argc = argv.length;
+    argv.forEach(function(e, i, a) { a[i] = decodeURIComponent(e) });
+    var win = aEvent.source;
+    if (argv[0] === "REGISTER" && argc === 1) {
+      this.remoteWindows.push(win);
+      this.postMsg(win, "REGISTERED", document.title, this.slides.length);
+      this.postMsg(win, "CURSOR", this.idx + "." + this.step);
+      return;
+    }
+    if (argv[0] === "BACK" && argc === 1)
+      this.back();
+    if (argv[0] === "FORWARD" && argc === 1)
+      this.forward();
+    if (argv[0] === "START" && argc === 1)
+      this.goStart();
+    if (argv[0] === "END" && argc === 1)
+      this.goEnd();
+    if (argv[0] === "TOGGLE_CONTENT" && argc === 1)
+      this.toggleContent();
+    if (argv[0] === "SET_CURSOR" && argc === 2)
+      window.location.hash = "#" + argv[1];
+    if (argv[0] === "GET_CURSOR" && argc === 1)
+      this.postMsg(win, "CURSOR", this.idx + "." + this.step);
+    if (argv[0] === "GET_NOTES" && argc === 1)
+      this.postMsg(win, "NOTES", this.getDetails(this.idx));
+  }
+
+  Dz.toggleContent = function() {
+    // If a Video is present in this new slide, play it.
+    // If a Video is present in the previous slide, stop it.
+    var s = $("section[aria-selected]");
+    if (s) {
+      var video = s.$("video");
+      if (video) {
+        if (video.ended || video.paused) {
+          video.play();
+        } else {
+          video.pause();
+        }
+      }
+    }
+  }
+
+  Dz.setCursor = function(aIdx, aStep) {
+    // If the user change the slide number in the URL bar, jump
+    // to this slide.
+    aStep = (aStep != 0 && typeof aStep !== "undefined") ? "." + aStep : ".0";
+    window.location.hash = "#" + aIdx + aStep;
+  }
+
+  Dz.onhashchange = function() {
+    var cursor = window.location.hash.split("#"),
+        newidx = 1,
+        newstep = 0;
+    if (cursor.length == 2) {
+      newidx = ~~cursor[1].split(".")[0];
+      newstep = ~~cursor[1].split(".")[1];
+      if (newstep > Dz.slides[newidx - 1].$$('.incremental > *').length) {
+        newstep = 0;
+        newidx++;
+      }
+    }
+    if (newidx != this.idx) {
+      this.setSlide(newidx);
+    }
+    if (newstep != this.step) {
+      this.setIncremental(newstep);
+    }
+    for (var i = 0; i < this.remoteWindows.length; i++) {
+      this.postMsg(this.remoteWindows[i], "CURSOR", this.idx + "." + this.step);
+    }
+  }
+
+  Dz.back = function() {
+    if (this.idx == 1 && this.step == 0) {
+      return;
+    }
+    if (this.step == 0) {
+      this.setCursor(this.idx - 1,
+                     this.slides[this.idx - 2].$$('.incremental > *').length);
+    } else {
+      this.setCursor(this.idx, this.step - 1);
+    }
+  }
+
+  Dz.forward = function() {
+    if (this.idx >= this.slides.length &&
+        this.step >= this.slides[this.idx - 1].$$('.incremental > *').length) {
+        return;
+    }
+    if (this.step >= this.slides[this.idx - 1].$$('.incremental > *').length) {
+      this.setCursor(this.idx + 1, 0);
+    } else {
+      this.setCursor(this.idx, this.step + 1);
+    }
+  }
+
+  Dz.goStart = function() {
+    this.setCursor(1, 0);
+  }
+
+  Dz.goEnd = function() {
+    var lastIdx = this.slides.length;
+    var lastStep = this.slides[lastIdx - 1].$$('.incremental > *').length;
+    this.setCursor(lastIdx, lastStep);
+  }
+
+  Dz.setSlide = function(aIdx) {
+    this.idx = aIdx;
+    var old = $("section[aria-selected]");
+    var next = $("section:nth-of-type("+ this.idx +")");
+    if (old) {
+      old.removeAttribute("aria-selected");
+      var video = old.$("video");
+      if (video) {
+        video.pause();
+      }
+    }
+    if (next) {
+      next.setAttribute("aria-selected", "true");
+      var video = next.$("video");
+      if (video && !!+this.params.autoplay) {
+        video.play();
+      }
+    } else {
+      // That should not happen
+      this.idx = -1;
+      // console.warn("Slide doesn't exist.");
+    }
+  }
+
+  Dz.setIncremental = function(aStep) {
+    this.step = aStep;
+    var old = this.slides[this.idx - 1].$('.incremental > *[aria-selected]');
+    if (old) {
+      old.removeAttribute('aria-selected');
+    }
+    var incrementals = this.slides[this.idx - 1].$$('.incremental');
+    if (this.step <= 0) {
+      incrementals.forEach(function(aNode) {
+        aNode.removeAttribute('active');
+      });
+      return;
+    }
+    var next = this.slides[this.idx - 1].$$('.incremental > *')[this.step - 1];
+    if (next) {
+      next.setAttribute('aria-selected', true);
+      next.parentNode.setAttribute('active', true);
+      var found = false;
+      incrementals.forEach(function(aNode) {
+        if (aNode != next.parentNode)
+          if (found)
+            aNode.removeAttribute('active');
+          else
+            aNode.setAttribute('active', true);
+        else
+          found = true;
+      });
+    } else {
+      setCursor(this.idx, 0);
+    }
+    return next;
+  }
+  
+  Dz.postMsg = function(aWin, aMsg) { // [arg0, [arg1...]]
+    aMsg = [aMsg];
+    for (var i = 2; i < arguments.length; i++)
+      aMsg.push(encodeURIComponent(arguments[i]));
+    aWin.postMessage(aMsg.join(" "), "*");
+  }
+
+  window.onload = Dz.init.bind(Dz);
+  window.onkeydown = Dz.onkeydown.bind(Dz);
+  window.onresize = Dz.onresize.bind(Dz);
+  window.onhashchange = Dz.onhashchange.bind(Dz);
+  window.onmessage = Dz.onmessage.bind(Dz);
+</script>
+
+
+<script> // Helpers
+  if (!Function.prototype.bind) {
+    Function.prototype.bind = function (oThis) {
+
+      // closest thing possible to the ECMAScript 5 internal IsCallable
+      // function 
+      if (typeof this !== "function")
+      throw new TypeError(
+        "Function.prototype.bind - what is trying to be fBound is not callable"
+      );
+
+      var aArgs = Array.prototype.slice.call(arguments, 1),
+          fToBind = this,
+          fNOP = function () {},
+          fBound = function () {
+            return fToBind.apply( this instanceof fNOP ? this : oThis || window,
+                   aArgs.concat(Array.prototype.slice.call(arguments)));
+          };
+
+      fNOP.prototype = this.prototype;
+      fBound.prototype = new fNOP();
+
+      return fBound;
+    };
+  }
+
+  var $ = (HTMLElement.prototype.$ = function(aQuery) {
+    return this.querySelector(aQuery);
+  }).bind(document);
+
+  var $$ = (HTMLElement.prototype.$$ = function(aQuery) {
+    return this.querySelectorAll(aQuery);
+  }).bind(document);
+
+  NodeList.prototype.forEach = function(fun) {
+    if (typeof fun !== "function") throw new TypeError();
+    for (var i = 0; i < this.length; i++) {
+      fun.call(this, this[i]);
+    }
+  }
+
+</script>
+<!-- vim: set fdm=marker: }}} -->
