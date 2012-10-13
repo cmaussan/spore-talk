@@ -14,7 +14,7 @@
 </section>
 <section>
     <h2>World Wide Web</h2>
-    <p class="baseline">URL, HTML, <strong class="stronger">HTTP</strong></p>
+    <p class="baseline">URL, HTML, HTTP</p>
 </section>
 <section>
     <h2>1992</h2>
@@ -34,7 +34,7 @@
 
 <section>
     <h2>SOAP</h2>
-    <p class="baseline"><strong ass="stronger">Simple</strong> Object Access Protocol<br>546Ko<p>
+    <p class="baseline">Simple Object Access Protocol<br>546Ko<p>
 </section>
 
 <section>
@@ -149,7 +149,7 @@ $client->enable( 'Format::JSON' );
 
 my $res;
 try {
-    $res = $client->search( format => 'json', q => 'fpw' );
+    $res = $client->search( format => 'json', q => 'osdc' );
 }
 catch {
     warn $_;
@@ -175,7 +175,7 @@ say $_->{ text } for( @{ $res->body->{ results } } );</pre>
                              :overload {:base_url "http://base_url/"}))
 
 (try
-    (let [res ((client :search) :format "json" :q "fpw")]
+    (let [res ((client :search) :format "json" :q "osdc")]
         (doseq [item (:decoded-body res)] (println (item :text))))
     (catch Exception e (println (.getMessage e))))</pre>
     </div>
@@ -195,7 +195,7 @@ local Spore = require 'Spore'
 local client = Spore.new_from_spec '/path/to/spec.json'
 client:enable 'Format.JSON'
 
-local res = client:search{ format = 'json', q = 'fpw' }
+local res = client:search{ format = 'json', q = 'osdc' }
 
 for t in res.body.results do
     print( t.text )
@@ -222,7 +222,7 @@ client = Spore.new(
 client.enable(Spore::Middleware::Format)
 
 res = begin
-    client.search( :format => 'json', :q => 'fpw' )
+    client.search( :format => 'json', :q => 'osdc' )
 rescue
     raise $!
 end
@@ -246,7 +246,7 @@ var spore = require( 'spore' );
 var client = spore.createClient( __dirname + '/path/to/spec.json' );
 client.enable( spore.middlewares.json() ); 
 
-client.search( { format: 'json', q: 'fpw' }, function( err, res ) {
+client.search( { format: 'json', q: 'osdc' }, function( err, res ) {
     if ( err ) 
         throw err;
     for( i in res.body.results ){
@@ -270,7 +270,7 @@ client.search( { format: 'json', q: 'fpw' }, function( err, res ) {
     var client  = spore.create(twitter_spec,function(a){ client=a });
 
     client.search(
-        { "format": "json", "q": "fpw" },
+        { "format": "json", "q": "osdc" },
         function( res, req ) {
             for( var i in d.results ) {
                 var t = d.results[i];
@@ -307,7 +307,7 @@ public class MySporeTest {
         Spore<JsonNode> spore = new Spore.Builder<JsonNode>()
                                .addMiddleware(Spore.JSON).addSpecContent(spec).build();
         Map<String, String> publicParams = new ImmutableMap.Builder<String, String>()
-                                           .put("format", "json").put("q", "fpw")
+                                           .put("format", "json").put("q", "osdc")
                                            .build();
         SporeResult<JsonNode> result = spore.call("search", publicParams);
         Iterator<JsonNode> results = result.body.get("results").getElements();
@@ -326,16 +326,64 @@ public class MySporeTest {
 </section>
 
 <section>
-    <h3>Autre langages</h3>
-    <p class="subtitle">Python</p>
-    <ul style="margin-top: 10px; ">
-        <li><scan class="normal">Spyre</span>
-        <li><span class="normal">Client en cours par Franck Cuny</span>
-    </ul>
+    <h3 style="margin-top: 40px; ">Python</h3>
+    <div class="code">
+    <pre class="prettyprint">
+import spyre
 
-    <p class="subtitle">Autres</p>
+spec  = 'path/to/spec.json'
+
+spore = spyre.new_from_spec(
+    spec,
+    base_url="http://base_url/")
+try:
+    res = spore.search(format='json',q='osdc')
+    for result in res.body.results
+        print result.text
+except (Exception, KeyboardInterrupt) as e:
+        print e.sterror</pre>
+    </div>
     <ul style="margin-top: 10px; ">
-        <li><span class="normal">PHP (?)</span>
+        <li><span class="normal">Client en cours de développement</span>
+        <li><span class="normal">Pas encore de POST et de PUT (payload)</span>
+        <li><span class="normal">Développé par Franck Cuny et Damien Leroux, repris par Arnaud Grausem</span>
+        <li><span class="normal">spyre est dispo sur <a href="https://github.com/agrausem/spyre">GitHub</a></span>
+        <li><span class="normal">Franck Cuny a entrepris une autre version...</span>
+    </ul>
+</section>
+
+<section>
+    <h3 style="margin-top: 40px; ">PHP</h3>
+    <div class="code">
+    <pre class="prettyprint">
+&lt;?php
+
+require_once 'lib/Spore.php';
+
+$spore = new Spore( 'path/to/spec' ); # YAML ?
+
+$res   = $spore->search( array( 'format'=>'json', 'q'=>'osdc' ) );
+
+echo "&lt;ul&gt;";
+for( $res['body']['results'] as $result ) {
+    echo "&lt;li&gt;$result";
+}
+echo "&lt;/ul&gt;";
+
+?&gt;
+    </pre>
+    </div>
+    <ul style="margin-top: 10px; ">
+        <li><span class="normal">Peu d'info</span>
+        <li><span class="normal">Développé par Bin Shu chez Weborama</span>
+        <li><span class="normal">PHP-Spore est dispo sur <a href="https://github.com/bins/PHP-Spore">GitHub</a></span>
+    </ul>
+</section>
+
+<section>
+    <h3>Autre langages</h3>
+
+    <ul style="margin-top: 10px; ">
         <li><span class="normal">C#</span>
         <li><span class="normal">C++, Haskell, Go : à faire ;)</span>
     </ul>
@@ -354,6 +402,7 @@ public class MySporeTest {
     <p>CouchDB / Presque (système de message inspiré de resque) / Redmine</p>
 </section>
 
+<!--
 <section>
     <h3>Google APIs Discovery</h3>
     <ul class="incremental" style="margin-top: 40px; ">
@@ -361,6 +410,15 @@ public class MySporeTest {
         <li><span class="normal">Souplesse : pas de compilation</span>
         <li><span class="normal">Google APIs Discovery n'existe aujourd'hui que pour les APIs Google</span>
         <li><span class="normal">SPORE est compatible (on peut générer des specs SPORE à partir de specs Google APIs Discovery)</span>
+    </ul>
+</section>
+-->
+<section>
+    <h3>To do</h3>
+    <ul class="incremental">
+        <li>Finir et mettre en ligne le site (proposition pour l'héberger sur Acme)
+        <li>Pouvoir déclarer et valider les paramètres au sein du payload
+        <li>Ecrire un vrai générateur de clients pour les langages compilés
     </ul>
 </section>
 
@@ -378,7 +436,6 @@ public class MySporeTest {
 <section>
     <h3>Remerciements</h3>
     <ul>
-        <li><span class="normal">François Perrad, Sukria et Weborama, François de Metz et AF83<span>
         <li><span class="normal">Tous ceux qui écrivent des specs :)</span>
         <li><span class="normal">Tous ceux qui utilisent SPORE !</span>
     </ul>
